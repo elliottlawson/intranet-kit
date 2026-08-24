@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supply Co. — Tailnet Branch</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            background: #FFFFFF;
+            color: #333333;
+        }
+
+        .masthead {
+            padding: 10px 16px;
+            border-bottom: 2px solid #FED700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .masthead-left {
+            font-size: 16px;
+        }
+
+        .masthead-left .company {
+            font-weight: bold;
+            color: #336633;
+        }
+
+        .masthead-left .branch {
+            color: #333;
+        }
+
+        .masthead-right {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .container {
+            display: flex;
+            min-height: calc(100vh - 60px);
+        }
+
+        .sidebar {
+            width: 190px;
+            border-right: 1px solid #CCC;
+            padding: 16px 0 16px 16px;
+        }
+
+        .sidebar h2 {
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            margin-bottom: 4px;
+        }
+
+        .sidebar a {
+            display: block;
+            padding: 4px 8px;
+            font-size: 12px;
+            color: #333;
+            text-decoration: none;
+            border-radius: 2px;
+        }
+
+        .sidebar a:hover {
+            background: #FFFFB5;
+        }
+
+        .sidebar a.selected {
+            background: #FFE600;
+            font-weight: bold;
+        }
+
+        .main {
+            flex: 1;
+            padding: 16px 24px;
+        }
+
+        .breadcrumb {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .main-title {
+            font-size: 19px;
+            font-weight: bold;
+            color: #336633;
+            margin-bottom: 8px;
+        }
+
+        .main-blurb {
+            font-size: 12px;
+            color: #333;
+            margin-bottom: 24px;
+        }
+
+        .department {
+            margin-bottom: 32px;
+        }
+
+        .department-title {
+            font-size: 19px;
+            font-weight: bold;
+            color: #336633;
+            border-top: 1px solid #CCC;
+            padding-top: 16px;
+            margin-bottom: 4px;
+        }
+
+        .department:first-child .department-title {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .department-count {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 12px;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 8px;
+        }
+
+        .product-cell {
+            border: 1px solid #EEE;
+            padding: 8px 10px;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            width: 100%;
+            min-width: 160px;
+            max-width: 220px;
+        }
+
+        .product-cell:hover {
+            background: #FAFAFA;
+        }
+
+        .part-number {
+            font-family: monospace;
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 2px;
+        }
+
+        .service-name {
+            font-size: 12px;
+            font-weight: bold;
+            color: #006699;
+            margin-bottom: 2px;
+        }
+
+        .service-fact {
+            font-size: 10.5px;
+            color: #666;
+            line-height: 1.3;
+        }
+
+        .footer {
+            border-top: 1px solid #CCC;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #999;
+        }
+
+        .mobile-departments {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .masthead-right {
+                display: none;
+            }
+
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .mobile-departments {
+                display: block;
+                padding: 12px 16px;
+                border-bottom: 1px solid #EEE;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            .mobile-departments a {
+                font-size: 12px;
+                color: #333;
+                text-decoration: none;
+                margin-right: 16px;
+            }
+
+            .mobile-departments a:hover {
+                color: #006699;
+            }
+
+            .main {
+                padding: 16px;
+            }
+
+            .product-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .product-cell {
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="masthead">
+        <div class="masthead-left">
+            <span class="company" id="company"></span>
+            <span class="branch" id="branch"></span>
+        </div>
+        <div class="masthead-right">
+            Catalog | Order Status: All Systems Stocked | Branch: Mini
+        </div>
+    </div>
+
+    <div class="mobile-departments" id="mobileNav"></div>
+
+    <div class="container">
+        <div class="sidebar">
+            <h2>Departments</h2>
+            <ul id="deptNav"></ul>
+        </div>
+
+        <div class="main">
+            <div class="breadcrumb">Catalog &gt; All Services &gt; Tailnet Branch</div>
+            <h1 class="main-title">Intranet Services</h1>
+            <div class="main-blurb" id="blurb"></div>
+            <div id="departments"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div id="footCompany"></div>
+        <div id="footStock"></div>
+    </div>
+
+<script id="theme-config" type="application/json">
+{"company":"Supply Co.","branch":"Tailnet Branch","departments":[],"services":[]}
+</script>
+<script>
+(function(){
+    var cfg=JSON.parse(document.getElementById("theme-config").textContent);
+    document.title=cfg.company+" — "+cfg.branch;
+    document.getElementById("company").textContent=cfg.company;
+    document.getElementById("branch").textContent=" — "+cfg.branch;
+    document.getElementById("footCompany").textContent=cfg.company+" — "+cfg.branch;
+    document.getElementById("blurb").textContent=cfg.services.length+" services in stock. Available same session. Tailnet delivery only.";
+    document.getElementById("footStock").textContent="Prices: None. Stock: "+cfg.services.length+".";
+
+    var deptNav=document.getElementById("deptNav");
+    var mobileNav=document.getElementById("mobileNav");
+    var wrap=document.getElementById("departments");
+
+    cfg.departments.forEach(function(d,di){
+        var li=document.createElement("li");
+        var a=document.createElement("a");
+        a.href="#"+d.id;a.textContent=d.name;
+        if(di===0)a.className="selected";
+        li.appendChild(a);deptNav.appendChild(li);
+
+        var ma=document.createElement("a");
+        ma.href="#"+d.id;ma.textContent=d.name;
+        mobileNav.appendChild(ma);
+
+        var members=cfg.services.filter(function(s){return s.department===d.id});
+        if(!members.length)return;
+        var dept=document.createElement("div");
+        dept.className="department";dept.id=d.id;
+        var t=document.createElement("h2");t.className="department-title";t.textContent=d.name;
+        var c=document.createElement("div");c.className="department-count";
+        c.textContent=members.length+" product"+(members.length===1?"":"s");
+        var grid=document.createElement("div");grid.className="product-grid";
+        members.forEach(function(s){
+            var cell=document.createElement("a");
+            cell.href=s.url;cell.className="product-cell";
+            var sku=document.createElement("div");sku.className="part-number";sku.textContent=s.sku;
+            var nm=document.createElement("div");nm.className="service-name";nm.textContent=s.name;
+            var ft=document.createElement("div");ft.className="service-fact";ft.textContent=s.fact;
+            cell.appendChild(sku);cell.appendChild(nm);cell.appendChild(ft);
+            grid.appendChild(cell);
+        });
+        dept.appendChild(t);dept.appendChild(c);dept.appendChild(grid);
+        wrap.appendChild(dept);
+    });
+
+    document.querySelectorAll(".sidebar a, .mobile-departments a").forEach(function(link){
+        link.addEventListener("click",function(e){
+            e.preventDefault();
+            var target=document.querySelector(link.getAttribute("href"));
+            if(target){
+                target.scrollIntoView({behavior:"smooth"});
+                document.querySelectorAll(".sidebar a").forEach(function(a){a.classList.remove("selected")});
+                var sidebarLink=document.querySelector('.sidebar a[href="'+link.getAttribute("href")+'"]');
+                if(sidebarLink)sidebarLink.classList.add("selected");
+            }
+        });
+    });
+
+    window.addEventListener("scroll",function(){
+        var current="";
+        document.querySelectorAll(".department").forEach(function(dept){
+            if(dept.getBoundingClientRect().top<=100)current=dept.id;
+        });
+        document.querySelectorAll(".sidebar a").forEach(function(link){
+            link.classList.remove("selected");
+            if(link.getAttribute("href")==="#"+current)link.classList.add("selected");
+        });
+    });
+})();
+</script>
+
+</body>
+</html>

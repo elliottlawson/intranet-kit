@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hotkey</title>
+<style>
+:root{
+  --paper:#0D0D0F; --panel:#16161A; --ink:#F5F5F7; --muted:#8E8E93;
+  --accent:#FF6363; --glow:#7B61FF; --border:rgba(255,255,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  min-height:100dvh;
+  font-family:"Inter",-apple-system,system-ui,sans-serif;
+  color:var(--ink);
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  background:var(--paper);
+}
+#scene{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-color:var(--paper);
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+}
+#scene::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg,rgba(8,8,10,.35) 0%,rgba(8,8,10,.55) 55%,rgba(8,8,10,.72) 100%);
+}
+body[data-bg="dusk"] #scene,
+body[data-bg="coast"] #scene{
+  filter:blur(18px);
+  transform:scale(1.08);
+}
+body[data-bg="ember"] #scene{
+  background-image:
+    radial-gradient(900px 520px at 50% 36%, rgba(255,99,99,.38), transparent 58%),
+    radial-gradient(760px 460px at 52% 52%, rgba(123,97,255,.30), transparent 62%);
+}
+body[data-bg="ember"] #scene::after{background:rgba(8,8,10,.18)}
+body[data-bg="aurora"] #scene{
+  background-image:
+    radial-gradient(80% 60% at 20% 20%, rgba(255,80,90,.35), transparent 50%),
+    radial-gradient(70% 70% at 80% 30%, rgba(90,70,255,.4), transparent 55%),
+    radial-gradient(90% 50% at 50% 90%, rgba(20,40,80,.6), transparent 55%);
+}
+body[data-bg="aurora"] #scene::after{background:rgba(8,8,10,.2)}
+body[data-bg="dusk"] #scene{
+  background-image:
+    radial-gradient(90% 70% at 30% 20%, rgba(64,84,140,.45), transparent 55%),
+    radial-gradient(80% 60% at 75% 65%, rgba(150,80,120,.35), transparent 60%),
+    linear-gradient(180deg, #10131f 0%, #1c1530 100%);
+}
+body[data-bg="coast"] #scene{
+  background-image:
+    radial-gradient(85% 65% at 25% 25%, rgba(72,130,160,.4), transparent 58%),
+    radial-gradient(75% 55% at 78% 70%, rgba(190,150,96,.28), transparent 62%),
+    linear-gradient(180deg, #0d1622 0%, #14283a 100%);
+}
+.hero{position:relative;z-index:1;text-align:center;padding:80px 20px 48px}
+.bg-picks{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+.bg-picks button{
+  border:0;border-radius:999px;padding:6px 10px;
+  background:rgba(255,255,255,.08);color:#c8c8cc;font:12px inherit;cursor:pointer;
+}
+.bg-picks button[aria-pressed="true"]{background:#f5f5f7;color:#111}
+a{text-decoration:none;color:inherit}
+kbd{
+  font-family:ui-monospace,Menlo,monospace; font-size:13px; color:var(--ink);
+  background:rgba(255,255,255,0.1); border-radius:6px; padding:3px 7px;
+}
+.hero{
+  position:relative;z-index:1;text-align:center;padding:80px 20px 48px;
+}
+.hero h1{font-size:clamp(32px,6vw,56px); font-weight:700; letter-spacing:-.02em; line-height:1.1; position:relative}
+.cmdbar{
+  position:relative; margin:36px auto 0; width:min(640px,100%);
+  background:rgba(22,22,26,.58);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;
+  backdrop-filter:blur(28px) saturate(1.35);
+  -webkit-backdrop-filter:blur(28px) saturate(1.35);
+  box-shadow:0 0 0 1px rgba(255,255,255,.04), 0 24px 80px rgba(0,0,0,.45);
+  text-align:left; overflow:hidden;
+}
+.cmdline{
+  display:flex; align-items:center; gap:12px; padding:16px 20px;
+  border-bottom:1px solid var(--border); font-size:19px; color:var(--muted);
+}
+.cmdline svg{flex:none}
+.cmdline input{
+  flex:1; min-width:0; background:none; border:0; outline:0;
+  font:inherit; font-size:19px; color:var(--ink); caret-color:var(--accent);
+}
+.cmdline input::placeholder{color:var(--muted)}
+.results{list-style:none; padding:10px 10px 18px; max-height:min(520px,58dvh); overflow:auto}
+.cmdbar.one .results{max-height:none; padding:10px 10px 18px}
+.cmdbar.settings .results{display:none}
+.results li.empty{padding:14px 12px; color:var(--muted); font-size:14px; display:none}
+.results li.empty.show{display:block}
+.results li a{
+  display:flex; align-items:center; gap:14px; padding:11px 12px; border-radius:8px;
+  transition:background .15s ease-out;
+}
+.results li + li{margin-top:4px}
+.results li a:hover, .results li.hot a{background:rgba(255,255,255,0.1)}
+.app-icon{
+  flex:none; width:30px; height:30px; border-radius:8px; display:grid; place-items:center;
+  font-size:15px; font-weight:700; color:#fff;
+}
+.r-copy{min-width:0; text-align:left}
+.r-title{font-size:15px; font-weight:600; color:var(--ink); line-height:1.3}
+.r-sub{font-size:13px; color:var(--muted); line-height:1.3}
+.r-keys{margin-left:auto; display:flex; gap:6px; flex:none}
+.bar-foot{
+  border-top:1px solid var(--border);
+  padding:8px 12px 12px;
+  display:flex; justify-content:flex-end;
+}
+.bar-foot button{
+  width:32px; height:32px; display:grid; place-items:center;
+  background:none; border:0; border-radius:8px; color:var(--muted); cursor:pointer;
+}
+.bar-foot button:hover, .cmdbar.settings .bar-foot button{color:var(--ink); background:rgba(255,255,255,.08)}
+.pins{display:none; padding:8px 18px 18px; text-align:left}
+.cmdbar.settings .pins{display:block}
+.pins p{color:var(--muted); font-size:12px; margin-bottom:8px}
+.pins label{
+  display:flex; align-items:center; gap:8px; padding:6px 0; font-size:13px; color:var(--ink);
+}
+.hint{position:relative; margin-top:22px; color:var(--muted); font-size:13px}
+@media(max-width:640px){
+  .hero{padding:48px 16px 36px}
+  .r-keys{display:none}
+}
+</style>
+</head>
+<body data-bg="coast">
+<div id="scene"></div>
+<header class="hero">
+  <h1>Your shortcut to everything</h1>
+  <div class="cmdbar">
+    <div class="cmdline">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.8-3.8"/></svg>
+      <input id="cmd" type="text" placeholder="Search services…" autocomplete="off" autocapitalize="off" spellcheck="false" autofocus>
+    </div>
+    <ul class="results" id="results">
+      <li class="empty">No results.</li>
+    </ul>
+    <div class="pins" id="pins"></div>
+    <div class="bar-foot">
+      <button type="button" id="settings" aria-label="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </div>
+  <p class="hint">Type to filter. <kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>↵</kbd> to open.</p>
+</header>
+<script id="theme-config" type="application/json">
+{"pins":[],"services":[]}
+</script>
+<script>
+(function(){
+  var cfg=JSON.parse(document.getElementById("theme-config").textContent);
+  var input=document.getElementById("cmd");
+  var list=document.getElementById("results");
+  cfg.services.forEach(function(s){
+    var li=document.createElement("li");
+    var a=document.createElement("a");
+    a.href=s.url;a.target="_blank";a.rel="noopener noreferrer";a.dataset.name=s.name;
+    var icon=document.createElement("span");
+    icon.className="app-icon";icon.style.background=s.color;icon.textContent=s.icon;
+    var copy=document.createElement("span");copy.className="r-copy";
+    var title=document.createElement("span");title.className="r-title";title.textContent="Open "+s.name;
+    var sub=document.createElement("span");sub.className="r-sub";sub.textContent=s.fact;
+    copy.appendChild(title);copy.appendChild(document.createElement("br"));copy.appendChild(sub);
+    a.appendChild(icon);a.appendChild(copy);
+    li.appendChild(a);list.appendChild(li);
+  });
+  var items=[].slice.call(list.querySelectorAll("li:not(.empty)"));
+  var empty=list.querySelector(".empty");
+  var bar=document.querySelector(".cmdbar");
+  var pinsBox=document.getElementById("pins");
+  var KEY="hotkey-pins";
+  var defaults=cfg.pins.slice(0,6);
+  function loadPins(){
+    try{var s=JSON.parse(localStorage.getItem(KEY)); if(Array.isArray(s)&&s.length) return s.slice(0,6)}catch(e){}
+    return defaults.slice();
+  }
+  function savePins(p){ try{localStorage.setItem(KEY,JSON.stringify(p.slice(0,6)))}catch(e){} }
+  function applyPins(){
+    var pins=loadPins();
+    items.forEach(function(li){
+      var a=li.querySelector("a");
+      var name=a.dataset.name;
+      var i=pins.indexOf(name);
+      var keys=a.querySelector(".r-keys");
+      if(i>=0){
+        a.dataset.key=String(i+1);
+        if(!keys){
+          keys=document.createElement("span");
+          keys.className="r-keys";
+          a.appendChild(keys);
+        }
+        keys.innerHTML="<kbd>⌃</kbd><kbd>"+(i+1)+"</kbd>";
+      }else{
+        delete a.dataset.key;
+        if(keys) keys.remove();
+      }
+    });
+  }
+  function visible(){return items.filter(function(li){return li.style.display!=="none"})}
+  function setHot(li){
+    items.forEach(function(i){i.classList.remove("hot")});
+    if(li)li.classList.add("hot");
+  }
+  function filter(){
+    var q=input.value.trim().toLowerCase();
+    items.forEach(function(li){
+      li.style.display=!q||li.textContent.toLowerCase().indexOf(q)>-1?"":"none";
+    });
+    var v=visible();
+    empty.classList.toggle("show",v.length===0);
+    bar.classList.toggle("one",v.length===1);
+    setHot(v[0]||null);
+  }
+  items.forEach(function(li){
+    li.addEventListener("mouseenter",function(){setHot(li)});
+  });
+  input.addEventListener("input",filter);
+  input.addEventListener("keydown",function(e){
+    var v=visible();
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+      e.preventDefault();
+      if(!v.length)return;
+      var i=v.indexOf(list.querySelector(".hot"));
+      var n=e.key==="ArrowDown"?(i+1)%v.length:(i-1+v.length)%v.length;
+      setHot(v[n]);
+      v[n].scrollIntoView({block:"nearest"});
+    }else if(e.key==="Enter"){
+      e.preventDefault();
+      var hot=list.querySelector(".hot a")||(v[0]&&v[0].querySelector("a"));
+      if(hot) hot.click();
+    }else if(e.key==="Escape"){
+      if(bar.classList.contains("settings")){bar.classList.remove("settings");pinsBox.innerHTML="";return}
+      input.value="";filter()
+    }
+  });
+  document.addEventListener("keydown",function(e){
+    if(e.ctrlKey&&!e.metaKey&&/^[1-6]$/.test(e.key)){
+      var a=document.querySelector('a[data-key="'+e.key+'"]');
+      if(a){e.preventDefault(); a.click()}
+    }
+  });
+  document.getElementById("settings").addEventListener("click",function(){
+    bar.classList.toggle("settings");
+    if(!bar.classList.contains("settings")){pinsBox.innerHTML="";return}
+    var allowed=["ember","aurora","coast","dusk"];
+    var current=document.body.dataset.bg;
+    if(allowed.indexOf(current)<0) current="ember";
+    pinsBox.innerHTML="<p>Background</p><div class=\"bg-picks\"></div><p>Pinned shortcuts</p>";
+    var picks=pinsBox.querySelector(".bg-picks");
+    [["ember","Ember"],["aurora","Aurora"],["coast","Coast"],["dusk","Dusk"]].forEach(function(pair){
+      var b=document.createElement("button");
+      b.type="button"; b.textContent=pair[1];
+      b.setAttribute("aria-pressed",pair[0]===current?"true":"false");
+      b.addEventListener("click",function(){
+        setBg(pair[0]);
+        [].slice.call(picks.children).forEach(function(x){x.setAttribute("aria-pressed","false")});
+        b.setAttribute("aria-pressed","true");
+      });
+      picks.appendChild(b);
+    });
+    var pins=loadPins();
+    items.forEach(function(li){
+      var name=li.querySelector("a").dataset.name;
+      var lab=document.createElement("label");
+      var cb=document.createElement("input");
+      cb.type="checkbox"; cb.checked=pins.indexOf(name)>-1;
+      cb.addEventListener("change",function(){
+        var next=loadPins().filter(function(n){return n!==name});
+        if(cb.checked){
+          if(next.length>=6){cb.checked=false;return}
+          next.push(name);
+        }
+        savePins(next); applyPins();
+      });
+      lab.appendChild(cb);
+      lab.appendChild(document.createTextNode(" "+name));
+      pinsBox.appendChild(lab);
+    });
+  });
+  applyPins();
+  filter();
+  var bgKey="hotkey-bg";
+  var allowedBg=["ember","aurora","coast","dusk"];
+  function setBg(name){
+    if(allowedBg.indexOf(name)<0) name="ember";
+    document.body.dataset.bg=name;
+    try{localStorage.setItem(bgKey,name)}catch(e){}
+  }
+  var savedBg=null;
+  try{savedBg=localStorage.getItem(bgKey)}catch(e){}
+  setBg(savedBg||"coast");
+})();
+</script>
+</body>
+</html>

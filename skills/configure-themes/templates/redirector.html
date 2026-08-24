@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intranet</title>
+<script>
+// Front door: forward to the visitor's last theme, or the default on first visit.
+(function(){
+  var PAGES=__ROSTER__;
+
+  var dest="__DEFAULT__";
+  try{
+    var t=localStorage.getItem("intranet-theme");
+    if(t&&PAGES.indexOf(t)>-1)dest=t;
+  }catch(e){}
+  location.replace(dest);
+})();
+</script>
+</head>
+<body></body>
+</html>

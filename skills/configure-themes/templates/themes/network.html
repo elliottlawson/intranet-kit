@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Network</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:#07141D;color:#DCEBF2;
+    font-family:"Avenir Next","Segoe UI",sans-serif;min-height:100vh;
+    background-image:linear-gradient(rgba(152,211,220,.045) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(152,211,220,.045) 1px,transparent 1px);
+    background-size:56px 56px;
+  }
+  .wrap{max-width:1240px;margin:0 auto;padding:56px 32px 40px}
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;
+    padding-bottom:26px;border-bottom:1px solid rgba(152,211,220,.25)}
+  h1{font-size:clamp(35px,7vw,78px);font-weight:500;letter-spacing:-0.065em;line-height:.92;color:#DCEBF2}
+  header p{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;color:#7FA2AE;text-align:right;max-width:280px;line-height:1.9}
+  .eyebrow{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:#54D6D0;margin:34px 0 12px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#07141D;
+    outline:1px solid rgba(152,211,220,.25)}
+  .node{position:relative;display:block;background:#091A24;padding:22px 20px 20px;min-height:148px;
+    text-decoration:none;color:#DCEBF2;transition:background .2s ease,transform .2s ease,box-shadow .2s ease}
+  .node:hover{background:#0D2833;transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,.45);z-index:2}
+  .coord{font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.12em;
+    text-transform:uppercase;color:#527481}
+  .dot{position:absolute;top:20px;right:20px;width:8px;height:8px;border-radius:50%;background:#54D6D0;
+    box-shadow:0 0 8px 2px rgba(84,214,208,.55);animation:pulse 3.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+  .name{position:absolute;left:20px;right:20px;bottom:42px;font-size:15px;font-weight:600}
+  .meta{position:absolute;left:20px;right:20px;bottom:22px;font-family:ui-monospace,Menlo,monospace;
+    font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7FA2AE;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  footer{display:flex;justify-content:space-between;gap:16px;margin-top:34px;padding-top:18px;
+    border-top:1px solid rgba(152,211,220,.25);font-family:ui-monospace,Menlo,monospace;
+    font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#527481}
+  @media (max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:600px){
+    .wrap{padding:36px 18px 32px}
+    header{flex-direction:column;align-items:flex-start}
+    header p{text-align:left}
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .node{min-height:128px;padding:16px 14px 14px}
+    .name{left:14px;right:14px;bottom:38px}
+    .meta{left:14px;right:14px;bottom:18px}
+    .dot{top:14px;right:14px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Network</h1>
+    <p>Services and machines available inside the tailnet.</p>
+  </header>
+  <div class="eyebrow" id="eyebrow"></div>
+  <div class="grid" id="grid"></div>
+  <footer><span>Tailnet · Private</span><span id="count"></span></footer>
+</div>
+
+<script id="theme-config" type="application/json">
+{"services":[]}
+</script>
+<script>
+(function(){
+  var cfg=JSON.parse(document.getElementById("theme-config").textContent);
+  var services=cfg.services;
+  var grid=document.getElementById("grid");
+  services.forEach(function(s,i){
+    var a=document.createElement("a");
+    a.className="node";a.href=s.url;a.target="_blank";a.rel="noopener noreferrer";
+    var coord=document.createElement("span");coord.className="coord";
+    coord.textContent="N-"+String(i+1).padStart(2,"0")+" · "+s.category;
+    var dot=document.createElement("span");dot.className="dot";
+    dot.style.animationDelay=(-(i*0.6)%3.6).toFixed(1)+"s";
+    var name=document.createElement("span");name.className="name";name.textContent=s.name;
+    var meta=document.createElement("span");meta.className="meta";meta.textContent=s.meta;
+    a.appendChild(coord);a.appendChild(dot);a.appendChild(name);a.appendChild(meta);
+    grid.appendChild(a);
+  });
+  document.getElementById("eyebrow").textContent="Nodes · "+services.length+" online";
+  document.getElementById("count").textContent=services.length+" nodes";
+})();
+</script>
+
+</body>
+</html>

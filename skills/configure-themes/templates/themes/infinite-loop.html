@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Explore the lineup.</title>
+<style>
+  :root{--paper:#F5F5F7;--ink:#1D1D1F;--muted:#6E6E73;--link:#0066CC;--card:#FFFFFF;--seg:#E8E8ED;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:"SF Pro Display","SF Pro Text",-apple-system,"Helvetica Neue",sans-serif;
+    background:var(--paper); color:var(--ink); font-size:17px; line-height:1.47;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--link); text-decoration:none}
+
+  header{max-width:1200px; margin:0 auto; padding:64px 22px 36px;}
+  header h1{font-size:56px; font-weight:600; letter-spacing:-0.02em;}
+
+  .seg{max-width:1200px; margin:0 auto 40px; padding:0 22px;}
+  .seg-inner{
+    display:inline-flex; background:var(--seg); border-radius:980px; padding:4px;
+  }
+  .seg-inner button{
+    font:inherit; font-size:15px; padding:8px 22px; border:none; border-radius:980px;
+    background:transparent; color:var(--ink); cursor:pointer;
+  }
+  .seg-inner button.active{background:var(--ink); color:#fff;}
+
+  .slider-wrap{position:relative; max-width:1200px; margin:0 auto; padding:0 22px 24px;}
+  .slider{
+    display:flex; gap:20px; overflow-x:auto; scroll-snap-type:x mandatory;
+    scrollbar-width:none; padding-bottom:8px;
+  }
+  .slider::-webkit-scrollbar{display:none}
+
+  .tile{
+    flex:0 0 320px; scroll-snap-align:start;
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    color:var(--ink);
+  }
+  .artwrap{
+    display:grid; place-items:center;
+    width:100%; height:220px; margin-bottom:28px;
+    background:var(--card); border-radius:28px;
+  }
+  .art{max-width:130px; max-height:130px; object-fit:contain;}
+  .inbox-art svg{width:110px; height:110px;}
+  .tile h2{font-size:28px; font-weight:600; letter-spacing:-0.01em;}
+  .tile .tag{margin-top:6px; font-size:17px; color:var(--muted); min-height:50px;}
+  .tile .cta{
+    margin-top:18px; display:inline-block;
+    background:var(--link); color:#fff; font-size:17px;
+    padding:10px 26px; border-radius:980px;
+  }
+
+  .arrows{display:flex; justify-content:flex-end; gap:12px; max-width:1200px; margin:0 auto; padding:0 22px 56px;}
+  .arrows button{
+    width:44px; height:44px; border:none; border-radius:50%; cursor:pointer;
+    background:var(--seg); color:var(--ink); font-size:18px; line-height:1;
+    display:grid; place-items:center;
+  }
+  .arrows button:disabled{opacity:.35; cursor:default;}
+
+  footer{max-width:1200px; margin:0 auto; padding:0 22px 40px; font-size:12px; color:var(--muted);}
+
+  @media (max-width:734px){
+    header{padding:40px 16px 24px;}
+    header h1{font-size:34px;}
+    .seg{padding:0 16px; margin-bottom:28px;}
+    .seg-inner button{font-size:13px; padding:7px 14px;}
+    .slider-wrap{padding:0 16px 16px;}
+    .tile{flex-basis:260px;}
+    .artwrap{height:180px;}
+    .arrows{padding:0 16px 40px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Explore the lineup.</h1>
+</header>
+
+<div class="seg">
+  <div class="seg-inner" id="seg">
+    <button class="active" data-filter="all">All</button>
+    <button data-filter="create">Create</button>
+    <button data-filter="watch">Watch</button>
+    <button data-filter="read">Read</button>
+    <button data-filter="keep">Keep</button>
+  </div>
+</div>
+
+<div class="slider-wrap">
+  <div class="slider" id="slider"></div>
+</div>
+
+<div class="arrows">
+  <button id="prev" aria-label="Previous" disabled>&lsaquo;</button>
+  <button id="next" aria-label="Next">&rsaquo;</button>
+</div>
+
+<footer>
+  <p id="footcount"></p>
+</footer>
+
+<script id="theme-config" type="application/json">
+{"services":[]}
+</script>
+<script>
+(function(){
+  var cfg=JSON.parse(document.getElementById("theme-config").textContent);
+  var slider=document.getElementById("slider");
+  cfg.services.forEach(function(s){
+    var a=document.createElement("a");
+    a.className="tile";a.dataset.group=s.group;a.href=s.url;
+    var wrap=document.createElement("span");wrap.className="artwrap";
+    if(s.art.type==="img"){
+      var img=document.createElement("img");img.className="art";img.src=s.art.src;img.alt="";
+      wrap.appendChild(img);
+    }else{
+      var sp=document.createElement("span");sp.className="art inbox-art";sp.innerHTML=s.art.svg;
+      wrap.appendChild(sp);
+    }
+    var h=document.createElement("h2");h.textContent=s.name;
+    var tag=document.createElement("p");tag.className="tag";tag.textContent=s.tagline;
+    var cta=document.createElement("span");cta.className="cta";cta.textContent="Open";
+    a.appendChild(wrap);a.appendChild(h);a.appendChild(tag);a.appendChild(cta);
+    slider.appendChild(a);
+  });
+  document.getElementById("footcount").textContent=cfg.services.length+" services. Self-hosted since 2026.";
+})();
+</script>
+<script>
+(function(){
+  var seg=document.getElementById('seg');
+  var slider=document.getElementById('slider');
+  var tiles=[].slice.call(slider.querySelectorAll('.tile'));
+  var prev=document.getElementById('prev'), next=document.getElementById('next');
+
+  seg.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click',function(){
+      seg.querySelectorAll('button').forEach(function(x){x.classList.remove('active')});
+      b.classList.add('active');
+      var f=b.dataset.filter;
+      tiles.forEach(function(t){
+        t.style.display=(f==='all'||t.dataset.group===f)?'':'none';
+      });
+      slider.scrollLeft=0; update();
+    });
+  });
+
+  function step(){
+    var t=tiles.find(function(x){return x.style.display!=='none'});
+    return t? t.offsetWidth+20 : 340;
+  }
+  function update(){
+    prev.disabled = slider.scrollLeft<=0;
+    next.disabled = slider.scrollLeft+slider.clientWidth>=slider.scrollWidth-4;
+  }
+  prev.addEventListener('click',function(){slider.scrollBy({left:-step(),behavior:'smooth'})});
+  next.addEventListener('click',function(){slider.scrollBy({left:step(),behavior:'smooth'})});
+  slider.addEventListener('scroll',update);
+  update();
+})();
+</script>
+
+</body>
+</html>

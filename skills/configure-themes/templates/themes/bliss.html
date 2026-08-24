@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bliss</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{font-family:Tahoma,"MS Sans Serif",sans-serif;font-size:11px;color:#000;-webkit-font-smoothing:antialiased}
+  /* ---------- Bliss wallpaper ---------- */
+  .desktop{position:fixed;inset:0 0 30px 0;overflow:hidden;background:#2B7DE0;user-select:none}
+  .wp{position:absolute;inset:0;width:100%;height:100%}
+  .marquee{position:absolute;border:1px dotted #FFF;background:rgba(49,106,197,.25);display:none;z-index:3}
+  /* ---------- desktop icons ---------- */
+  .icons{position:absolute;inset:0;z-index:2}
+  .icon{position:absolute;width:86px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 2px;text-decoration:none;border:1px solid transparent;touch-action:none}
+  .icon:hover{background:rgba(49,106,197,.25);border:1px dotted rgba(255,255,255,.6)}
+  .icon.drag{z-index:9;background:rgba(49,106,197,.35);border:1px dotted rgba(255,255,255,.8);opacity:.85}
+  /* ---------- desktop context menu ---------- */
+  .ctx{position:fixed;display:none;z-index:65;min-width:190px;padding:2px;background:#ECE9D8;border:1px solid #ACA899;box-shadow:2px 2px 4px rgba(0,0,0,.35)}
+  .ctx.open{display:block}
+  .ctx button{display:flex;align-items:center;gap:8px;width:100%;border:0;background:transparent;padding:5px 12px 5px 24px;
+    font-family:Tahoma,sans-serif;font-size:11px;color:#000;text-align:left;cursor:pointer;position:relative}
+  .ctx button:hover{background:#316AC5;color:#FFF}
+  .ctx button .chk{position:absolute;left:8px;font-weight:700;display:none}
+  .ctx button.on .chk{display:inline}
+  .ctx hr{border:0;border-top:1px solid #ACA899;margin:2px 4px}
+  .icon span{color:#FFF;text-shadow:1px 1px 2px rgba(0,0,0,.75);text-align:center;line-height:1.15;max-width:84px}
+  /* ---------- glossy icon tiles ---------- */
+  .tile{width:32px;height:32px;border-radius:6px;position:relative;flex:none;display:flex;align-items:center;justify-content:center;
+    border:1px solid rgba(0,0,0,.35);overflow:hidden;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -8px 12px rgba(0,0,0,.18)}
+  .tile::after{content:"";position:absolute;left:1px;right:1px;top:1px;height:45%;border-radius:5px 5px 8px 8px;
+    background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.05));pointer-events:none}
+  .tile svg{display:block}
+  /* ---------- window ---------- */
+  .window{position:absolute;width:580px;max-width:calc(100vw - 24px);max-height:calc(100vh - 90px);
+    display:flex;flex-direction:column;background:#ECE9D8;border-radius:8px 8px 0 0;
+    box-shadow:2px 4px 12px rgba(0,0,0,.45);border:1px solid #0058E6;border-bottom-color:#716F64;z-index:5}
+  .window.min{transition:transform .15s ease-in,opacity .15s ease-in;transform:translateY(60vh) scale(.2);opacity:0;pointer-events:none}
+  .window.max{left:0 !important;top:0 !important;width:100%;max-width:100%;height:calc(100vh - 30px);max-height:calc(100vh - 30px);border-radius:0}
+  .titlebar{height:28px;flex:none;border-radius:7px 7px 0 0;display:flex;align-items:center;padding:0 4px 0 10px;cursor:default;
+    background:linear-gradient(180deg,#3A93FF 0%,#0058E6 45%,#0050D6 55%,#2E7FF2 100%)}
+  .window.max .titlebar{border-radius:0}
+  .titlebar b{color:#FFF;font-size:11px;text-shadow:1px 1px 0 rgba(0,0,0,.5);flex:1;font-weight:700}
+  .tbtn{width:21px;height:21px;border-radius:3px;border:1px solid rgba(255,255,255,.6);cursor:pointer;margin-left:2px;
+    font-family:Tahoma,sans-serif;font-size:11px;color:#FFF;line-height:1;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,#5EA3F7,#2E6FD8);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+  .tbtn.close{background:linear-gradient(180deg,#F08A80,#D6544D 60%,#B93A34)}
+  .tbtn:active{box-shadow:inset 0 1px 3px rgba(0,0,0,.4)}
+  .tbtn svg{display:block}
+  .menubar{display:flex;gap:2px;padding:2px 4px;background:#ECE9D8;border-bottom:1px solid #D8D5C5;font-size:11px}
+  .menubar span{padding:2px 7px;cursor:default}
+  .menubar span:hover{background:#316AC5;color:#FFF}
+  .menubar u{text-decoration:underline}
+  .winbody{padding:12px 14px;overflow:auto;flex:1}
+  .winbody p{margin-bottom:10px;line-height:1.3}
+  .proglist{border:1px solid #ACA899;background:#FFF;box-shadow:inset 1px 1px 0 #ACA899,inset -1px -1px 0 #FFF}
+  .prog{display:flex;align-items:center;gap:10px;padding:7px 10px;color:#000;border-bottom:1px solid #E4E2D4;cursor:pointer}
+  .prog:last-child{border-bottom:0}
+  .prog:hover{background:#DEE8F8}
+  .prog.sel{background:#316AC5;color:#FFF}
+  .prog.sel small{color:#DCE9FF}
+  .prog .tile{width:24px;height:24px}
+  .prog b{font-weight:400;font-size:11px}
+  .prog small{margin-left:auto;color:#716F64;font-size:11px;white-space:nowrap}
+  .prog input.deskcbox{width:13px;height:13px;margin:0 0 0 8px;cursor:pointer;flex:none;accent-color:#316AC5}
+  .winfoot{display:flex;justify-content:flex-end;gap:6px;padding:10px 14px 12px}
+  .btn{padding:4px 18px;background:#ECE9D8;border:1px solid;cursor:pointer;font-family:Tahoma,sans-serif;font-size:11px;
+    border-color:#FFF #716F64 #716F64 #FFF;box-shadow:inset 1px 1px 0 #FFF,inset -1px -1px 0 #ACA899}
+  .btn:active{border-color:#716F64 #FFF #FFF #716F64;box-shadow:inset 1px 1px 0 #ACA899}
+  /* ---------- taskbar ---------- */
+  .taskbar{position:fixed;left:0;right:0;bottom:0;height:30px;z-index:20;display:flex;align-items:stretch;
+    background:linear-gradient(180deg,#3A93FF 0%,#316AC5 12%,#2A5FC0 50%,#2456A8 90%,#3A7BE0 100%)}
+  .start{display:flex;align-items:center;gap:6px;padding:0 18px 0 12px;margin:2px 6px 2px 2px;border:0;cursor:pointer;
+    border-radius:0 14px 14px 0;color:#FFF;font-weight:700;font-style:italic;font-size:13px;font-family:Tahoma,sans-serif;
+    text-shadow:1px 1px 0 rgba(0,0,0,.4);
+    background:linear-gradient(180deg,#6FC06A 0%,#3A913E 40%,#2E7A32 60%,#4FA84F 100%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,0,0,.25)}
+  .start:active,.start.on{box-shadow:inset 0 2px 5px rgba(0,0,0,.4)}
+  .task{display:flex;align-items:center;gap:6px;margin:3px 2px;padding:0 12px;max-width:200px;
+    background:linear-gradient(180deg,#5B97EE,#3B74D4);border:1px solid rgba(255,255,255,.25);border-radius:3px;
+    color:#FFF;font-size:11px;cursor:pointer;font-family:Tahoma,sans-serif;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+  .task:active{box-shadow:inset 0 1px 4px rgba(0,0,0,.4)}
+  .task .tile{width:16px;height:16px;border-radius:3px}
+  .tray{margin-left:auto;display:flex;align-items:center;gap:7px;padding:0 12px;color:#FFF;font-size:11px;
+    background:linear-gradient(180deg,#2E9BD8,#1B7FC0);border-left:1px solid rgba(255,255,255,.25);
+    box-shadow:inset 1px 0 0 rgba(0,0,0,.15)}
+  .tray svg{display:block;opacity:.9}
+  /* ---------- start menu ---------- */
+  .smenu{position:fixed;left:2px;bottom:30px;width:400px;max-width:calc(100vw - 8px);z-index:30;
+    background:#ECE9D8;border-radius:8px 8px 0 0;border:1px solid #0058E6;
+    box-shadow:2px -2px 12px rgba(0,0,0,.4);display:none;flex-direction:column}
+  .smenu.open{display:flex}
+  .shead{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:7px 7px 0 0;
+    background:linear-gradient(180deg,#3A93FF 0%,#0058E6 50%,#2E7FF2 100%)}
+  .shead .avatar{width:34px;height:34px;border-radius:4px;border:1px solid rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,#FFDD8E,#ED9253);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+  .shead b{color:#FFF;font-size:14px;text-shadow:1px 1px 0 rgba(0,0,0,.45)}
+  .scols{display:flex;min-height:264px;max-height:min(430px,calc(100vh - 190px))}
+  .sleft{flex:1.4;background:#FFF;padding:6px 0;border-right:1px solid #ACA899;display:flex;flex-direction:column;overflow:auto}
+  .sright{flex:1;background:#D3E5FA;padding:6px 0}
+  .sitem{display:flex;align-items:center;gap:8px;padding:5px 10px;text-decoration:none;color:#000;font-size:11px}
+  .sitem:hover{background:#316AC5;color:#FFF}
+  .sitem .tile{width:24px;height:24px;flex:none}
+  .sright .sitem{font-weight:700;color:#1B3F8C}
+  .sright .sitem:hover{color:#FFF}
+  .sleft .allprogs{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:6px;padding:5px;font-weight:700;color:#1F5A1F;cursor:default}
+  .sfoot{display:flex;align-items:center;padding:6px 8px;border-top:1px solid #ACA899;background:#ECE9D8}
+  .sfoot .count{color:#716F64;font-size:10px;margin-right:auto;padding-left:4px}
+  .sbtn{display:flex;align-items:center;gap:6px;border:0;background:transparent;cursor:pointer;
+    font-family:Tahoma,sans-serif;font-size:11px;color:#000;padding:3px 6px;border-radius:3px}
+  .sbtn:hover{background:#316AC5;color:#FFF}
+  .sbtn .sq{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 3px rgba(0,0,0,.2)}
+  .sbtn .sq svg{display:block}
+  .sq.logoff{background:linear-gradient(180deg,#F5B85E,#D97B1E)}
+  .sq.off{background:linear-gradient(180deg,#F08A80,#C0443B)}
+  .proghead{display:flex;align-items:center;padding:4px 10px;background:#F7F6EE;border-bottom:1px solid #ACA899;color:#716F64;font-size:10px}
+  .proghead span{margin-left:auto}
+  /* ---------- flyout: All Programs ---------- */
+  .flyout{position:fixed;display:none;z-index:40;min-width:200px;max-height:70vh;overflow:auto;
+    background:#FFF;border:1px solid #0058E6;box-shadow:2px 2px 6px rgba(0,0,0,.35);padding:3px 0}
+  .flyout.open{display:block}
+  .flyout .sitem{white-space:nowrap}
+  /* ---------- shutdown dialog, XP gloss ---------- */
+  .dim{position:fixed;inset:0;background:rgba(0,0,40,.55);z-index:60;display:none;align-items:center;justify-content:center}
+  .dim.open{display:flex}
+  .shutdlg{width:350px;border-radius:8px;border:1px solid #001B6E;overflow:hidden;
+    background:linear-gradient(180deg,#0A358F 0%,#1E56C4 22%,#3D76DC 50%,#1E56C4 78%,#082E80 100%);
+    box-shadow:0 6px 24px rgba(0,0,0,.6)}
+  .shuthead{display:flex;align-items:center;padding:11px 12px 2px}
+  .shuthead b{color:#FFF;font-size:15px;font-weight:700;text-shadow:1px 1px 0 rgba(0,0,0,.45)}
+  .shuthead svg{margin-left:auto}
+  .shutbody{padding:16px 14px 6px;text-align:center}
+  .shutopts{display:flex;justify-content:center;gap:26px}
+  .shutopt{display:flex;flex-direction:column;align-items:center;gap:7px;border:0;background:transparent;cursor:pointer;
+    font-family:Tahoma,sans-serif;font-size:11px;color:#FFF;text-shadow:1px 1px 0 rgba(0,0,0,.4)}
+  .shutopt .big{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;position:relative;
+    border:1px solid rgba(0,0,0,.45);
+    box-shadow:inset 0 2px 2px rgba(255,255,255,.55),inset 0 -7px 10px rgba(0,0,0,.3),0 2px 4px rgba(0,0,0,.4)}
+  .shutopt .big::after{content:"";position:absolute;left:8%;right:8%;top:5%;height:44%;border-radius:6px 6px 10px 10px;
+    background:linear-gradient(180deg,rgba(255,255,255,.8),rgba(255,255,255,0))}
+  .shutopt .big svg{display:block;position:relative;z-index:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
+  .shutopt:hover .big{box-shadow:inset 0 2px 2px rgba(255,255,255,.55),inset 0 -7px 10px rgba(0,0,0,.3),0 0 0 3px rgba(255,255,255,.45),0 2px 4px rgba(0,0,0,.4)}
+  .shutopt:active .big{box-shadow:inset 0 3px 8px rgba(0,0,0,.5)}
+  .big.standby{background:radial-gradient(circle at 35% 28%,#F8D678 0%,#E8A020 58%,#B87A10 100%)}
+  .big.off{background:radial-gradient(circle at 35% 28%,#EE8878 0%,#C83A28 58%,#962114 100%)}
+  .big.restart{background:radial-gradient(circle at 35% 28%,#7CC66A 0%,#3E8E30 58%,#276019 100%)}
+  .shutfoot{display:flex;justify-content:flex-end;padding:10px 12px 12px}
+  .bluescr{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+    background:radial-gradient(ellipse at 50% 40%,#1E5CC8 0%,#0A3C9E 55%,#062B78 100%);color:#FFF}
+  .bluescr.open{display:flex}
+  .bluescr .flag{opacity:.95}
+  .bluescr p{font-size:14px;text-shadow:1px 1px 0 rgba(0,0,0,.4)}
+  .blackscr{position:fixed;inset:0;z-index:70;background:#000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:22px}
+  .blackscr.open{display:flex}
+  .blackscr p{color:#FFA800;font-family:"Lucida Console",monospace;font-size:13px}
+  .power{width:54px;height:54px;border-radius:50%;border:2px solid #333;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 35% 30%,#3a3a3a,#141414 75%);box-shadow:0 0 18px rgba(255,168,0,.15)}
+  .power:hover{box-shadow:0 0 22px rgba(255,168,0,.4)}
+  /* ---------- welcome (logon) screen ---------- */
+  .welcome{position:fixed;inset:0;z-index:80;display:none;
+    background:linear-gradient(180deg,#2C6BD8 0%,#5B9BE8 30%,#8FBEF0 50%,#5B9BE8 70%,#2456B8 100%)}
+  .welcome.open{display:flex}
+  .welbar{position:absolute;left:0;right:0;height:2px;background:rgba(255,255,255,.35)}
+  .welmid{margin:auto;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .welmid h1{color:#FFF;font-size:22px;font-weight:400;text-shadow:1px 1px 0 rgba(0,0,0,.35)}
+  .welmid p{color:#EAF3FF;font-size:12px;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
+  .usertile{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.45);
+    border-radius:8px;padding:10px 26px 10px 12px;cursor:pointer;color:#FFF}
+  .usertile:hover{background:rgba(255,255,255,.28)}
+  .usertile .avatar{width:46px;height:46px;border-radius:6px;border:1px solid rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,#FFDD8E,#ED9253)}
+  .usertile b{font-size:16px;text-shadow:1px 1px 0 rgba(0,0,0,.35)}
+  @media (max-width:600px){
+    .window{left:12px !important;top:40px !important}
+  }
+</style>
+</head>
+<body>
+
+<div class="desktop" id="desktop">
+  <!-- Bliss, redrawn smooth -->
+  <svg class="wp" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#1F63C8"/><stop offset=".45" stop-color="#4E9BE6"/>
+        <stop offset=".75" stop-color="#9CCBF2"/><stop offset="1" stop-color="#C7E6F8"/>
+      </linearGradient>
+      <radialGradient id="sun" cx=".5" cy=".5" r=".5">
+        <stop offset="0" stop-color="#FFFFFF" stop-opacity=".85"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="hillback" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8CCB5A"/><stop offset="1" stop-color="#4E8A2E"/>
+      </linearGradient>
+      <linearGradient id="hillfront" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#7AB648"/><stop offset=".6" stop-color="#5E9C34"/><stop offset="1" stop-color="#3E7420"/>
+      </linearGradient>
+      <filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="14"/></filter>
+      <filter id="grass"><feTurbulence type="fractalNoise" baseFrequency=".012 .05" numOctaves="3" seed="7" result="n"/>
+        <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 .25  0 0 0 0 0  0 0 0 .06 0"/>
+        <feComposite operator="over" in2="SourceGraphic"/></filter>
+    </defs>
+    <rect width="1600" height="1000" fill="url(#sky)"/>
+    <circle cx="1180" cy="170" r="260" fill="url(#sun)"/>
+    <g fill="#FFF" filter="url(#soft)">
+      <ellipse cx="260" cy="150" rx="150" ry="34"/><ellipse cx="330" cy="126" rx="90" ry="30"/><ellipse cx="190" cy="132" rx="70" ry="24"/>
+      <ellipse cx="820" cy="96" rx="180" ry="30" opacity=".92"/><ellipse cx="900" cy="76" rx="100" ry="26" opacity=".92"/>
+      <ellipse cx="1330" cy="210" rx="120" ry="26" opacity=".85"/><ellipse cx="1390" cy="192" rx="66" ry="20" opacity=".85"/>
+      <ellipse cx="560" cy="240" rx="90" ry="18" opacity=".6"/>
+    </g>
+    <path d="M-20 640 C 300 520 700 500 1050 570 C 1300 620 1500 640 1620 620 L1620 1020 L-20 1020 Z" fill="url(#hillback)"/>
+    <g filter="url(#grass)">
+      <path d="M-20 760 C 250 610 600 585 950 660 C 1250 725 1450 840 1620 900 L1620 1020 L-20 1020 Z" fill="url(#hillfront)"/>
+    </g>
+  </svg>
+
+  <div class="marquee" id="marquee"></div>
+  <div class="icons" id="icons"></div>
+
+  <div class="ctx" id="ctx">
+    <button id="ctxauto"><span class="chk">✓</span>Auto Arrange Icons</button>
+    <button id="ctxalign"><span class="chk"></span>Line up Icons</button>
+    <hr>
+    <button id="ctxrefresh"><span class="chk"></span>Refresh</button>
+  </div>
+
+  <!-- Add or Remove Programs -->
+  <div class="window" id="arpwin" style="left:230px;top:64px;display:none">
+    <div class="titlebar" id="arptitle">
+      <b>Add or Remove Programs</b>
+      <button class="tbtn" id="arpmin" title="Minimize"><svg width="10" height="10" viewBox="0 0 10 10"><rect x="1" y="7" width="8" height="2" fill="#FFF"/></svg></button>
+      <button class="tbtn" id="arpmax" title="Maximize"><svg width="10" height="10" viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="#FFF" stroke-width="1.4"/></svg></button>
+      <button class="tbtn close" id="arpclose" title="Close"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="#FFF" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="menubar"><span><u>F</u>ile</span><span><u>E</u>dit</span><span><u>V</u>iew</span><span><u>H</u>elp</span></div>
+    <div class="winbody">
+      <p>The following programs are installed on this computer. Click a program to open it. Use the checkbox to show or hide its desktop icon.</p>
+      <div class="proglist">
+        <div class="proghead">Programs<span>Show on desktop</span></div>
+        <div id="proglist"></div>
+      </div>
+    </div>
+    <div class="winfoot">
+      <button class="btn" id="arpok">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- Start menu -->
+<div class="smenu" id="smenu">
+  <div class="shead">
+    <div class="avatar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7A4A12" stroke-width="1.6"><circle cx="12" cy="9" r="3.4"/><path d="M5.5 19c1.2-3.4 3.8-5 6.5-5s5.3 1.6 6.5 5"/></svg></div>
+    <b>Elliott</b>
+  </div>
+  <div class="scols">
+    <div class="sleft" id="sleft">
+      <div class="allprogs">All Programs
+        <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6h7M6.5 3L9.5 6 6.5 9" stroke="#1F5A1F" stroke-width="1.4" fill="none"/></svg>
+      </div>
+    </div>
+    <div class="sright">
+      <span class="sitem" style="cursor:default">
+        <span class="tile" style="background:linear-gradient(180deg,#9DB9EB,#316AC5)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/></svg>
+        </span>My Computer</span>
+      <span class="sitem" style="cursor:default">
+        <span class="tile" style="background:linear-gradient(180deg,#F5D98A,#C99A2E)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="1.8"><path d="M4 7h6l2 2h8v10H4z"/><path d="M4 7V5h5l2 2"/></svg>
+        </span>My Documents</span>
+      <a class="sitem" href="#" id="openarp">
+        <span class="tile" style="background:linear-gradient(180deg,#9DB9EB,#316AC5)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16"/></svg>
+        </span>Add or Remove Programs</a>
+      <a class="sitem" href="#" id="opencp">
+        <span class="tile" style="background:linear-gradient(180deg,#B8C4D4,#5E6B7A)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+        </span>Control Panel</a>
+    </div>
+  </div>
+  <div class="sfoot">
+    <span class="count" id="scount"></span>
+    <button class="sbtn" id="logoffbtn">
+      <span class="sq logoff"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#FFF" stroke-width="1.5"><path d="M6 1.5v4.5"/><path d="M3.2 3.4a4 4 0 1 0 5.6 0"/></svg></span>Log Off</button>
+    <button class="sbtn" id="shutbtn">
+      <span class="sq off"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#FFF" stroke-width="1.5"><circle cx="6" cy="6" r="4.4"/><path d="M6 3.4v2.8"/></svg></span>Turn Off Computer</button>
+  </div>
+</div>
+
+<!-- All Programs flyout -->
+<div class="flyout" id="flyout"></div>
+
+<!-- Taskbar -->
+<div class="taskbar">
+  <button class="start" id="startbtn">
+    <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 5.5c2.6-1 5-1.2 7.5-.5v5.6H3z" fill="#F65314"/>
+      <path d="M11.5 4.4c2.5-.6 5.3-.4 9.5 1v5.7H11.5z" fill="#7CBB00"/>
+      <path d="M3 12.4h7.5v5.7c-2.5.6-4.9.4-7.5-.6z" fill="#00A1F1"/>
+      <path d="M11.5 12.4H21v5.8c-4.2 1.3-7 1.5-9.5.9z" fill="#FFBB00"/>
+    </svg>Start</button>
+  <button class="task" id="arptask" style="display:none">
+    <span class="tile" style="background:linear-gradient(180deg,#9DB9EB,#316AC5)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16"/></svg>
+    </span>Add or Remove Programs</button>
+  <div class="tray">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2"><path d="M4 10v4h4l5 4V6l-5 4H4z" fill="#FFF" stroke="none"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2"><rect x="3" y="5" width="18" height="11" rx="1"/><path d="M8 20h8"/></svg>
+    <span id="clock">--:--</span>
+  </div>
+</div>
+
+<!-- Shutdown dialog -->
+<div class="dim" id="shutdim">
+  <div class="shutdlg">
+    <div class="shuthead"><b>Turn off computer</b>
+      <svg width="24" height="24" viewBox="0 0 24 24">
+        <path d="M3 5.5c2.6-1 5-1.2 7.5-.5v5.6H3z" fill="#F65314"/>
+        <path d="M11.5 4.4c2.5-.6 5.3-.4 9.5 1v5.7H11.5z" fill="#7CBB00"/>
+        <path d="M3 12.4h7.5v5.7c-2.5.6-4.9.4-7.5-.6z" fill="#00A1F1"/>
+        <path d="M11.5 12.4H21v5.8c-4.2 1.3-7 1.5-9.5.9z" fill="#FFBB00"/>
+      </svg>
+    </div>
+    <div class="shutbody">
+      <div class="shutopts">
+        <button class="shutopt" id="standbybtn"><span class="big standby"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2.2"><path d="M12 4v7" stroke-linecap="round"/><path d="M7 6.8a7.5 7.5 0 1 0 10 0" stroke-linecap="round"/></svg></span>Stand By</button>
+        <button class="shutopt" id="offbtn"><span class="big off"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2.2"><path d="M12 3v9" stroke-linecap="round"/><path d="M6.5 6.2a8 8 0 1 0 11 0" stroke-linecap="round"/></svg></span>Turn Off</button>
+        <button class="shutopt" id="restartbtn"><span class="big restart"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2.2" stroke-linecap="round"><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.3 6.3l2.8 2.8M14.9 14.9l2.8 2.8M17.7 6.3l-2.8 2.8M9.1 14.9l-2.8 2.8"/></svg></span>Restart</button>
+      </div>
+    </div>
+    <div class="shutfoot"><button class="btn" id="shutcancel">Cancel</button></div>
+  </div>
+</div>
+
+<!-- Shutting down / restarting -->
+<div class="bluescr" id="bluescr">
+  <svg class="flag" width="60" height="60" viewBox="0 0 24 24">
+    <path d="M3 5.5c2.6-1 5-1.2 7.5-.5v5.6H3z" fill="#F65314"/>
+    <path d="M11.5 4.4c2.5-.6 5.3-.4 9.5 1v5.7H11.5z" fill="#7CBB00"/>
+    <path d="M3 12.4h7.5v5.7c-2.5.6-4.9.4-7.5-.6z" fill="#00A1F1"/>
+    <path d="M11.5 12.4H21v5.8c-4.2 1.3-7 1.5-9.5.9z" fill="#FFBB00"/>
+  </svg>
+  <p id="bluemsg">Bliss OS is shutting down…</p>
+</div>
+
+<!-- Safe to turn off -->
+<div class="blackscr" id="blackscr">
+  <p>It is now safe to turn off your computer.</p>
+  <button class="power" id="poweron" title="Power">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFA800" stroke-width="2"><path d="M12 3v8" stroke-linecap="round"/><path d="M6.3 6.5a8 8 0 1 0 11.4 0" stroke-linecap="round"/></svg>
+  </button>
+</div>
+
+<!-- Welcome (logon) -->
+<div class="welcome" id="welcome">
+  <div class="welbar" style="top:0"></div>
+  <div class="welmid">
+    <h1>Welcome</h1>
+    <div class="usertile" id="usertile">
+      <span class="avatar"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#7A4A12" stroke-width="1.6"><circle cx="12" cy="9" r="3.4"/><path d="M5.5 19c1.2-3.4 3.8-5 6.5-5s5.3 1.6 6.5 5"/></svg></span>
+      <b>Elliott</b>
+    </div>
+    <p>To begin, click your user name.</p>
+  </div>
+  <div class="welbar" style="bottom:0"></div>
+</div>
+
+<script id="theme-config" type="application/json">
+{"services":[]}
+</script>
+<script>
+var SERVICES=JSON.parse(document.getElementById("theme-config").textContent).services;
+/* prefs: desktop icon membership, order, free positions, auto-arrange */
+var PREFS={};
+try{PREFS=JSON.parse(localStorage.getItem("xp-desktop-icons")||"{}")}catch(e){}
+function onDesk(s){return PREFS[s.name]!==false}
+var ICONSTATE={order:null,pos:{},auto:false};
+try{ICONSTATE=Object.assign(ICONSTATE,JSON.parse(localStorage.getItem("xp-icon-layout")||"{}"))}catch(e){}
+function savePrefs(){try{localStorage.setItem("xp-desktop-icons",JSON.stringify(PREFS))}catch(e){}}
+function saveLayout(){try{localStorage.setItem("xp-icon-layout",JSON.stringify(ICONSTATE))}catch(e){}}
+
+function tile(s,px){
+  return '<span class="tile" style="background:linear-gradient(180deg,'+s.c1+','+s.c2+')">'+
+    '<svg width="'+Math.round(px*.68)+'" height="'+Math.round(px*.68)+'" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+s.svg+'</svg></span>';
+}
+var desk=document.getElementById("desktop"),
+    icons=document.getElementById("icons"),
+    sleft=document.getElementById("sleft"),
+    plist=document.getElementById("proglist"),
+    allprogs=sleft.querySelector(".allprogs");
+
+/* grid geometry: fill down columns, then across, like XP */
+var CW=90,CH=92,OX=16,OY=14;
+function gridDims(){
+  return {cols:Math.max(1,Math.floor((desk.clientWidth-OX)/CW)),
+          rows:Math.max(1,Math.floor((desk.clientHeight-OY)/CH))};
+}
+function cellXY(c,r){return {x:OX+c*CW,y:OY+r*CH}}
+function idxToCell(i){
+  var g=gridDims();return {c:Math.floor(i/g.rows),r:i%g.rows};
+}
+function xyToCell(x,y){
+  var g=gridDims();
+  return {c:Math.max(0,Math.min(g.cols-1,Math.round((x-OX)/CW))),
+          r:Math.max(0,Math.min(g.rows-1,Math.round((y-OY)/CH)))};
+}
+function nearestFree(cell,taken){
+  if(!taken[cell.c+","+cell.r])return cell;
+  var g=gridDims();
+  for(var d=1;d<g.cols+g.rows;d++){
+    var best=null,bd=1e9;
+    for(var c=0;c<g.cols;c++)for(var r=0;r<g.rows;r++){
+      if(taken[c+","+r])continue;
+      var dist=Math.abs(c-cell.c)+Math.abs(r-cell.r);
+      if(dist===d&&Math.abs(c-cell.c)+Math.abs(r-cell.r)<bd){best={c:c,r:r};bd=dist}
+    }
+    if(best)return best;
+  }
+  return cell;
+}
+function deskServices(){return SERVICES.filter(onDesk)}
+function orderedServices(){
+  var list=deskServices();
+  if(ICONSTATE.order){
+    var byName={};list.forEach(function(s){byName[s.name]=s});
+    var out=[];ICONSTATE.order.forEach(function(n){if(byName[n]){out.push(byName[n]);delete byName[n]}});
+    list.forEach(function(s){if(byName[s.name])out.push(s)});
+    return out;
+  }
+  return list;
+}
+function renderIcons(){
+  icons.innerHTML="";
+  var used={},g=gridDims(),list=orderedServices();
+  list.forEach(function(s){
+    var cell;
+    if(ICONSTATE.auto){
+      cell=idxToCell(list.indexOf(s));
+    }else{
+      cell=ICONSTATE.pos[s.name];
+      if(!cell||used[cell.c+","+cell.r]){
+        /* next free cell */
+        cell=null;
+        for(var c=0;c<g.cols&&!cell;c++)for(var r=0;r<g.rows;r++){
+          if(!used[c+","+r]){cell={c:c,r:r};break}
+        }
+        if(!cell)cell={c:0,r:0};
+      }
+    }
+    used[cell.c+","+cell.r]=1;
+    if(!ICONSTATE.auto)ICONSTATE.pos[s.name]=cell;
+    var xy=cellXY(cell.c,cell.r);
+    var a=document.createElement("a");
+    a.className="icon";a.href=s.url;a.target="_blank";a.rel="noopener noreferrer";
+    a.style.left=xy.x+"px";a.style.top=xy.y+"px";
+    a.dataset.name=s.name;
+    a.innerHTML=tile(s,32)+"<span>"+s.name+"</span>";
+    icons.appendChild(a);
+  });
+}
+/* drag icons: free drop snaps to grid; auto-arrange on = drop reorders */
+(function(){
+  var drag=null;
+  icons.addEventListener("pointerdown",function(e){
+    var el=e.target.closest(".icon");if(!el)return;
+    drag={el:el,sx:e.clientX,sy:e.clientY,moved:false,
+          ox:parseFloat(el.style.left),oy:parseFloat(el.style.top)};
+    el.setPointerCapture(e.pointerId);
+  });
+  icons.addEventListener("pointermove",function(e){
+    if(!drag)return;
+    var dx=e.clientX-drag.sx,dy=e.clientY-drag.sy;
+    if(!drag.moved&&Math.abs(dx)+Math.abs(dy)<5)return;
+    drag.moved=true;drag.el.classList.add("drag");
+    drag.el.style.left=(drag.ox+dx)+"px";drag.el.style.top=(drag.oy+dy)+"px";
+  });
+  icons.addEventListener("pointerup",function(e){
+    if(!drag)return;
+    var el=drag.el;el.classList.remove("drag");
+    if(drag.moved){
+      var cell=xyToCell(parseFloat(el.style.left),parseFloat(el.style.top));
+      if(ICONSTATE.auto){
+        /* reorder: move name to nearest slot in the order */
+        var g=gridDims(),names=orderedServices().map(function(s){return s.name});
+        var from=names.indexOf(el.dataset.name);
+        var to=Math.max(0,Math.min(names.length-1,cell.c*g.rows+cell.r));
+        names.splice(to,0,names.splice(from,1)[0]);
+        ICONSTATE.order=names;
+      }else{
+        /* free placement: take the target cell, or the nearest free one */
+        var taken={};
+        for(var n in ICONSTATE.pos){
+          if(n!==el.dataset.name&&onDesk({name:n}))taken[ICONSTATE.pos[n].c+","+ICONSTATE.pos[n].r]=1;
+        }
+        cell=nearestFree(cell,taken);
+        ICONSTATE.pos[el.dataset.name]=cell;
+      }
+      saveLayout();
+      /* suppress the click navigation after a drag */
+      el.addEventListener("click",function(ev){ev.preventDefault();ev.stopPropagation()},{capture:true,once:true});
+    }
+    drag=null;renderIcons();
+  });
+  icons.addEventListener("pointercancel",function(){if(drag){drag.el.classList.remove("drag");drag=null;renderIcons()}});
+})();
+/* right-click desktop menu */
+(function(){
+  var ctx=document.getElementById("ctx");
+  function sync(){ctx.querySelector("#ctxauto").classList.toggle("on",ICONSTATE.auto)}
+  desk.addEventListener("contextmenu",function(e){
+    e.preventDefault();sync();
+    ctx.style.left=Math.min(e.clientX,innerWidth-200)+"px";
+    ctx.style.top=Math.min(e.clientY,innerHeight-120)+"px";
+    ctx.classList.add("open");
+  });
+  document.addEventListener("click",function(e){if(!ctx.contains(e.target))ctx.classList.remove("open")});
+  document.getElementById("ctxauto").addEventListener("click",function(){
+    ICONSTATE.auto=!ICONSTATE.auto;
+    if(ICONSTATE.auto)ICONSTATE.pos={};
+    saveLayout();renderIcons();ctx.classList.remove("open");
+  });
+  document.getElementById("ctxalign").addEventListener("click",function(){
+    /* drop stored positions; icons re-flow into tidy columns */
+    ICONSTATE.pos={};saveLayout();renderIcons();ctx.classList.remove("open");
+  });
+  document.getElementById("ctxrefresh").addEventListener("click",function(){
+    renderIcons();ctx.classList.remove("open");
+  });
+})();
+var PINNED=6;
+var flyout=document.getElementById("flyout");
+SERVICES.forEach(function(s,i){
+  if(i<PINNED){
+    var m=document.createElement("a");
+    m.className="sitem";m.href=s.url;m.target="_blank";m.rel="noopener noreferrer";
+    m.innerHTML=tile(s,24)+s.name;
+    sleft.insertBefore(m,allprogs);
+  }
+  var f=document.createElement("a");
+  f.className="sitem";f.href=s.url;f.target="_blank";f.rel="noopener noreferrer";
+  f.innerHTML=tile(s,24)+s.name;
+  flyout.appendChild(f);
+  var p=document.createElement("div");
+  p.className="prog";p.title=s.fact;
+  p.innerHTML=tile(s,24)+"<b>"+s.name+"</b><small>"+s.size+" · "+s.use+"</small>"+
+    '<input class="deskcbox" type="checkbox" title="Show on desktop"'+(onDesk(s)?" checked":"")+'>';
+  var box=p.querySelector(".deskcbox");
+  p.addEventListener("click",function(){
+    box.checked=!box.checked;PREFS[s.name]=box.checked;savePrefs();renderIcons();
+  });
+  plist.appendChild(p);
+});
+/* All Programs flyout */
+allprogs.style.cursor="pointer";
+allprogs.addEventListener("click",function(e){
+  e.stopPropagation();
+  var open=flyout.classList.toggle("open");
+  if(open){
+    var r=allprogs.getBoundingClientRect();
+    flyout.style.left=Math.min(r.right+2,innerWidth-220)+"px";
+    flyout.style.bottom=(innerHeight-r.top-20)+"px";
+  }
+});
+document.addEventListener("click",function(e){
+  if(!flyout.contains(e.target))flyout.classList.remove("open");
+});
+renderIcons();
+document.getElementById("scount").textContent=SERVICES.length+" programs installed";
+
+/* start menu */
+var smenu=document.getElementById("smenu"),startbtn=document.getElementById("startbtn");
+startbtn.addEventListener("click",function(e){
+  e.stopPropagation();smenu.classList.toggle("open");startbtn.classList.toggle("on",smenu.classList.contains("open"));
+});
+document.addEventListener("click",function(e){
+  if(!smenu.contains(e.target)&&e.target!==startbtn){smenu.classList.remove("open");startbtn.classList.remove("on")}
+});
+
+/* window lifecycle — taskbar button follows the window; state persists */
+var win=document.getElementById("arpwin"),arptask=document.getElementById("arptask");
+var WINSTATE={open:false,left:null,top:null};
+try{WINSTATE=Object.assign(WINSTATE,JSON.parse(localStorage.getItem("xp-arp-window")||"{}"))}catch(e){}
+function saveWin(){
+  WINSTATE.left=win.style.left;WINSTATE.top=win.style.top;
+  try{localStorage.setItem("xp-arp-window",JSON.stringify(WINSTATE))}catch(e){}
+}
+function openWin(){
+  win.classList.remove("min");win.style.display="flex";arptask.style.display="flex";
+  WINSTATE.open=true;saveWin();
+  smenu.classList.remove("open");startbtn.classList.remove("on");flyout.classList.remove("open");
+}
+function closeWin(){win.style.display="none";arptask.style.display="none";WINSTATE.open=false;saveWin()}
+function minWin(){
+  win.classList.add("min");
+  setTimeout(function(){if(win.classList.contains("min"))win.style.display="none"},160);
+  saveWin();
+}
+document.getElementById("openarp").addEventListener("click",function(e){e.preventDefault();openWin()});
+document.getElementById("opencp").addEventListener("click",function(e){
+  e.preventDefault();smenu.classList.remove("open");startbtn.classList.remove("on");
+  /* defer: the panel's own outside-click closer would fire on this same click */
+  setTimeout(function(){
+    var tsw=document.getElementById("tsw");
+    if(tsw&&!tsw.classList.contains("open"))document.getElementById("tsw-btn").click();
+  },0);
+});
+arptask.addEventListener("click",openWin);
+document.getElementById("arpclose").addEventListener("click",closeWin);
+document.getElementById("arpok").addEventListener("click",closeWin);
+document.getElementById("arpmin").addEventListener("click",minWin);
+document.getElementById("arpmax").addEventListener("click",function(){win.classList.toggle("max")});
+/* restore where we left it */
+if(WINSTATE.left)win.style.left=WINSTATE.left;
+if(WINSTATE.top)win.style.top=WINSTATE.top;
+if(WINSTATE.open){win.style.display="flex";arptask.style.display="flex"}
+
+/* drag live by titlebar */
+(function(){
+  var bar=document.getElementById("arptitle"),drag=null;
+  bar.addEventListener("pointerdown",function(e){
+    if(e.target.closest(".tbtn")||win.classList.contains("max"))return;
+    var r=win.getBoundingClientRect();
+    drag={dx:e.clientX-r.left,dy:e.clientY-r.top};
+    bar.setPointerCapture(e.pointerId);
+  });
+  bar.addEventListener("pointermove",function(e){
+    if(!drag)return;
+    win.style.left=Math.max(0,Math.min(innerWidth-80,e.clientX-drag.dx))+"px";
+    win.style.top=Math.max(0,Math.min(innerHeight-60,e.clientY-drag.dy))+"px";
+  });
+  bar.addEventListener("pointerup",function(){if(drag){drag=null;saveWin()}});
+})();
+
+/* rubber-band selection on empty desktop */
+(function(){
+  var mq=document.getElementById("marquee"),sel=null;
+  desk.addEventListener("pointerdown",function(e){
+    if(e.target!==desk&&!e.target.classList.contains("wp"))return;
+    sel={x:e.clientX,y:e.clientY};
+    mq.style.display="block";
+  });
+  desk.addEventListener("pointermove",function(e){
+    if(!sel)return;
+    var r=desk.getBoundingClientRect();
+    var x=Math.min(sel.x,e.clientX)-r.left,y=Math.min(sel.y,e.clientY)-r.top;
+    mq.style.left=x+"px";mq.style.top=y+"px";
+    mq.style.width=Math.abs(e.clientX-sel.x)+"px";mq.style.height=Math.abs(e.clientY-sel.y)+"px";
+  });
+  desk.addEventListener("pointerup",function(){sel=null;mq.style.display="none"});
+})();
+
+/* shutdown flow */
+var shutdim=document.getElementById("shutdim"),blue=document.getElementById("bluescr"),
+    black=document.getElementById("blackscr"),bluemsg=document.getElementById("bluemsg");
+document.getElementById("shutbtn").addEventListener("click",function(){
+  smenu.classList.remove("open");startbtn.classList.remove("on");shutdim.classList.add("open");
+});
+document.getElementById("shutcancel").addEventListener("click",function(){shutdim.classList.remove("open")});
+shutdim.addEventListener("click",function(e){if(e.target===shutdim)shutdim.classList.remove("open")});
+function powerSeq(msg,thenBlack){
+  shutdim.classList.remove("open");
+  bluemsg.textContent=msg;blue.classList.add("open");
+  setTimeout(function(){
+    blue.classList.remove("open");
+    if(thenBlack)black.classList.add("open");
+  },1800);
+}
+document.getElementById("offbtn").addEventListener("click",function(){powerSeq("Bliss OS is shutting down…",true)});
+document.getElementById("restartbtn").addEventListener("click",function(){powerSeq("Bliss OS is restarting…",false)});
+document.getElementById("standbybtn").addEventListener("click",function(){powerSeq("Preparing to stand by…",true)});
+document.getElementById("poweron").addEventListener("click",function(){black.classList.remove("open")});
+
+/* log off → welcome screen */
+var welcome=document.getElementById("welcome");
+document.getElementById("logoffbtn").addEventListener("click",function(){
+  smenu.classList.remove("open");startbtn.classList.remove("on");welcome.classList.add("open");
+});
+document.getElementById("usertile").addEventListener("click",function(){welcome.classList.remove("open")});
+
+/* clock */
+function tick(){
+  var d=new Date(),h=d.getHours(),m=d.getMinutes(),ap=h>=12?"PM":"AM";
+  h=h%12||12;
+  document.getElementById("clock").textContent=h+":"+(m<10?"0":"")+m+" "+ap;
+}
+tick();setInterval(tick,15000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intranet News</title>
+    <style>
+        body {
+            background-color: #F6F6EF;
+            margin: 0;
+            padding: 0;
+            font-family: Verdana, Geneva, sans-serif;
+            color: #000000;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1050px;
+            margin: 0 auto;
+            padding-top: 10px;
+        }
+
+        .header {
+            background-color: #FF6600;
+            padding: 6px 8px;
+            margin-bottom: 10px;
+        }
+
+        .header .title {
+            font-size: 13px;
+            font-weight: bold;
+            color: white;
+            display: inline;
+        }
+
+        .header .nav {
+            font-size: 11px;
+            color: #FFD9B8;
+            margin-left: 10px;
+        }
+
+        .header .nav .new-link {
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .story-list {
+            margin-bottom: 10px;
+        }
+
+        .story {
+            margin-bottom: 10px;
+        }
+
+        .story-title {
+            font-size: 13.3px;
+            line-height: 1.2;
+        }
+
+        .story-rank {
+            color: #828282;
+            margin-right: 4px;
+        }
+
+        .story-vote {
+            color: #828282;
+            cursor: pointer;
+            margin-right: 4px;
+            font-size: 10px;
+            user-select: none;
+        }
+
+        .story-vote:hover {
+            color: #FF6600;
+        }
+
+        .story-vote.disabled {
+            cursor: default;
+            color: #ccc;
+        }
+
+        .story-vote.disabled:hover {
+            color: #ccc;
+        }
+
+        .story-link {
+            color: #000000;
+            text-decoration: none;
+        }
+
+        .story-link:hover {
+            text-decoration: underline;
+        }
+
+        .story-domain {
+            color: #828282;
+        }
+
+        .story-fact {
+            font-size: 11.5px;
+            color: #828282;
+            margin-left: 20px;
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+
+        .footer-rule {
+            border: none;
+            border-top: 1px solid #FF6600;
+            margin: 10px 0;
+        }
+
+        .footer {
+            font-size: 11.5px;
+            color: #828282;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 95%;
+            }
+
+            .header .nav {
+                display: block;
+                margin-left: 0;
+                margin-top: 2px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="title" id="siteTitle">Intranet News</span>
+            <span class="nav">
+                <span class="new-link" id="resetLink">new</span> |
+                <span>past</span> |
+                <span>comments</span> |
+                <span>ask</span> |
+                <span>show</span> |
+                <span>jobs</span> |
+                <span>submit</span>
+            </span>
+        </div>
+
+        <div class="story-list" id="storyList"></div>
+
+        <hr class="footer-rule">
+        <div class="footer" id="footer"></div>
+    </div>
+
+<script id="theme-config" type="application/json">
+{"services":[]}
+</script>
+<script>
+(function(){
+    var cfg=JSON.parse(document.getElementById("theme-config").textContent);
+    var services=cfg.services;
+    if(cfg.title){document.getElementById("siteTitle").textContent=cfg.title;document.title=cfg.title;}
+    var KEY="hn-story-order";
+    var list=document.getElementById("storyList");
+
+    function domainOf(url){return url.replace(/^https?:\/\//,"").replace(/\/.*$/,"")}
+
+    // Order is an array of service urls. Saved order wins; unknown urls
+    // (new services) append in config order, missing ones drop out.
+    function currentOrder(){
+        var all=services.map(function(s){return s.url});
+        try{
+            var saved=JSON.parse(localStorage.getItem(KEY)||"null");
+            if(Array.isArray(saved)){
+                var known=saved.filter(function(u){return all.indexOf(u)>-1});
+                all.forEach(function(u){if(known.indexOf(u)===-1)known.push(u)});
+                return known;
+            }
+        }catch(e){}
+        return all;
+    }
+
+    function render(order){
+        list.innerHTML="";
+        order.forEach(function(url,i){
+            var s=services.filter(function(x){return x.url===url})[0];
+            var story=document.createElement("div");story.className="story";story.dataset.url=url;
+            var title=document.createElement("div");title.className="story-title";
+            var rank=document.createElement("span");rank.className="story-rank";rank.textContent=(i+1)+".";
+            var vote=document.createElement("span");vote.className="story-vote"+(i===0?" disabled":"");vote.textContent="▲";
+            if(i>0)vote.addEventListener("click",function(){moveUp(url)});
+            var link=document.createElement("a");link.className="story-link";link.href=s.url;link.textContent=s.name;
+            var dom=document.createElement("span");dom.className="story-domain";dom.textContent=" ("+domainOf(s.url)+")";
+            title.appendChild(rank);title.appendChild(vote);title.appendChild(link);title.appendChild(dom);
+            var fact=document.createElement("div");fact.className="story-fact";fact.textContent=s.fact;
+            story.appendChild(title);story.appendChild(fact);
+            list.appendChild(story);
+        });
+        document.getElementById("footer").textContent=services.length+" services. Tailnet only.";
+    }
+
+    function moveUp(url){
+        var order=currentOrder();
+        var i=order.indexOf(url);
+        if(i<1)return;
+        order.splice(i,1);order.splice(i-1,0,url);
+        try{localStorage.setItem(KEY,JSON.stringify(order))}catch(e){}
+        render(order);
+    }
+
+    document.getElementById("resetLink").addEventListener("click",function(){
+        try{localStorage.removeItem(KEY)}catch(e){}
+        render(services.map(function(s){return s.url}));
+    });
+
+    render(currentOrder());
+})();
+</script>
+
+</body>
+</html>

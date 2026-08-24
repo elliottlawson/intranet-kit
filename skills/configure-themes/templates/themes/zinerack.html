@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zinerack</title>
+<style>
+*{margin:0;box-sizing:border-box}
+body{background:#F4F4F0;color:#000;font:16px/1.5 "Helvetica Neue",Arial,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:88px 18px 64px}
+.hero{text-align:center;margin-bottom:52px}
+.tag{display:inline-block;margin-bottom:18px;padding:4px 14px;border:2px solid #000;border-radius:999px;background:#F1F333;font-size:14px;font-weight:600}
+h1{font-size:clamp(38px,6vw,60px);font-weight:700;letter-spacing:-.02em;line-height:1.05}
+.sub{margin-top:14px;font-size:18px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.card{position:relative;display:block;padding:20px;border:2px solid #000;border-radius:4px;background:#fff;color:#000;text-decoration:none;box-shadow:4px 4px 0 #000;transition:transform .15s ease-out,box-shadow .15s ease-out,background .15s ease-out}
+.card:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 #000;background:#FF90E8}
+.card:active{transform:translate(4px,4px);box-shadow:0 0 0 #000}
+.pill{display:inline-block;margin-bottom:14px;padding:2px 10px;border:2px solid #000;border-radius:999px;font-size:12px;font-weight:600}
+.card:nth-child(4n+1) .pill{background:#FF90E8}
+.card:nth-child(4n+2) .pill{background:#F1F333}
+.card:nth-child(4n+3) .pill{background:#90A8ED}
+.card:nth-child(4n+4) .pill{background:#23A094;color:#fff}
+.nm{display:block;font-size:20px;font-weight:700;letter-spacing:-.01em}
+.ds{display:block;margin-top:4px;font-size:15px;color:#333}
+footer{margin-top:56px;text-align:center;font-size:14px;color:#333}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <span class="tag">Est. 2026</span>
+  <h1><span id="count"></span> things I run myself.</h1>
+  <p class="sub">No cloud, no subscription, no waiting. Pick one.</p>
+</header>
+<div class="grid" id="grid"></div>
+<footer>Made at home. Served at home.</footer>
+</div>
+<script id="theme-config" type="application/json">
+{"services":[]}
+</script>
+<script>
+(function(){
+  var cfg=JSON.parse(document.getElementById("theme-config").textContent);
+  var grid=document.getElementById("grid");
+  cfg.services.forEach(function(s){
+    var a=document.createElement("a");
+    a.className="card";a.href=s.url;a.target="_blank";a.rel="noopener noreferrer";
+    var pill=document.createElement("span");pill.className="pill";pill.textContent=s.pill;
+    var nm=document.createElement("span");nm.className="nm";nm.textContent=s.name;
+    var ds=document.createElement("span");ds.className="ds";ds.textContent=s.ds;
+    a.appendChild(pill);a.appendChild(nm);a.appendChild(ds);
+    grid.appendChild(a);
+  });
+  var n=document.querySelectorAll(".card").length;
+  var words=["zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty"];
+  var el=document.getElementById("count");
+  if(el) el.textContent=n<=20?words[n].charAt(0).toUpperCase()+words[n].slice(1):String(n);
+})();
+</script>
+</body>
+</html>
